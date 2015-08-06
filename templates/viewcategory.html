@@ -1,0 +1,66 @@
+{% extends "sitemaster.html" %}
+{% block content %}
+</br>
+</br>
+<div class="dropdown" style="display: inline-block">
+	<button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown">
+		{{selectedCategory.name}}<span class="caret"></span>
+	</button>
+    <ul class="dropdown-menu" role="menu" aria-labelledby="tsProjectSel">
+        <li role="presentation">
+            {% if categories !=[] %}
+                {% for cat in categories %}                    
+                    <a role="menuitem" tabindex="-1" href="{{url_for('viewCategory', category_id = cat.id)}}">{{cat.name}}</a>                   
+                {% endfor %}
+            {% else %}
+                <a role="menuitem" tabindex="-1" href="#">No Categories Found</a>
+            {% endif %}
+        </li>
+    </ul>    
+</div>
+{% if loggeduser is not none and loggeduser.id == selectedCategory.user_id %}
+<div class="pull-right inline">
+    <a href="{{url_for('addItem', category_id = selectedCategory.id)}}">
+    <button class="btn btn-default" value="edit">
+        <span class="glyphicon glyphicon-edit" aria-hidden="true"></span>
+        Add Item
+    </button>
+</a>
+</div>
+{% endif %}
+<!--All items under selected category category-->
+{% if items !=[] %}
+    <div class="table-responsive" style="max-height:400px;overflow:auto">
+        <table class="table">
+            <caption><h3>Items In "{{selectedCategory.name}}"</h3></caption>
+            {% for item in items %}
+            <tr>
+                <td><a href="{{url_for('viewItem', category_id = selectedCategory.id, item_id = item.id)}}">{{item.name}}</a></td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+{% else %}
+    </br><h4>No Items Found</h4>
+{% endif %} 
+</br>
+<label for="description">Description:</label>
+<textarea class="form-control" maxlength="250" rows="3" name="description" readonly="true">{{selectedCategory.description}}</textarea>
+<br/>
+<br/>
+{% if loggeduser is not none and loggeduser.id == selectedCategory.user_id %}
+    <a href="{{url_for('editCategory', category_id = selectedCategory.id)}}">
+        <button class="btn btn-default" value="edit">
+            <span class="glyphicon glyphicon-edit" aria-hidden="true"></span>
+            Edit category
+        </button>
+    </a>
+
+    <a href="{{url_for('deleteCategory', category_id = selectedCategory.id)}}">
+        <button class="btn btn-default delete" value="delete">
+            <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
+            Delete
+        </button>
+    </a>
+{% endif %}
+{% endblock %}

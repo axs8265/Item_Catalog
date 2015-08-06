@@ -1,0 +1,71 @@
+{% extends "sitemaster.html" %}
+{% block content %}
+</br>
+</br>
+<div class="dropdown" style="display: inline-block">
+	<button class="btn btn-default dropdown-toggle" type="button" id="tsProjectSel" data-toggle="dropdown">
+		{{selectedCategory.name}}<span class="caret"></span>
+	</button>
+    <ul class="dropdown-menu" role="menu" aria-labelledby="tsProjectSel">
+        <li role="presentation">
+            {% if categories !=[] %}
+                {% for cat in categories %}                    
+                    <a role="menuitem" tabindex="-1" href="{{url_for('viewItem', category_id = cat.id, item_id = 'noVal')}}">{{cat.name}}</a>                   
+                {% endfor %}
+            {% else %}
+                <a role="menuitem" tabindex="-1" href="#">No Categories Found</a>
+            {% endif %}
+        </li>
+    </ul>    
+</div>
+<div class="dropdown" style="display: inline-block">
+    <button class="btn btn-default dropdown-toggle" type="button" id="tsProjectSel" data-toggle="dropdown">
+        {{selectedItem.name}}<span class="caret"></span>
+    </button>
+    <ul class="dropdown-menu" role="menu" aria-labelledby="tsProjectSel">
+        <li role="presentation">
+            {% if items !=[] %}
+                {% for item in items %}                    
+                    <a role="menuitem" tabindex="-1" href="{{url_for('viewItem', category_id = item.category_id, item_id = item.id)}}">{{item.name}}</a>                   
+                {% endfor %}
+            {% else %}
+                <a role="menuitem" tabindex="-1" href="#">No Items Found</a>
+            {% endif %}
+        </li>
+    </ul>    
+</div>
+
+{% if selectedItem is not none %}
+    {% if loggeduser is not none and loggeduser.id == selectedItem.user_id %}
+    <div class="pull-right inline">
+        <a href="{{url_for('editItem', category_id = selectedCategory.id, item_id = selectedItem.id)}}">
+        <button class="btn btn-default" value="edit">
+            <span class="glyphicon glyphicon-edit" aria-hidden="true"></span>
+            Edit Item
+        </button>
+    </a>
+    <a href="{{url_for('deleteCategoryItem', category_id = selectedCategory.id, item_id = selectedItem.id)}}">
+        <button class="btn btn-default" value="edit">
+            <span class="glyphicon glyphicon-edit" aria-hidden="true"></span>
+            Delete Item
+        </button>
+    </a>
+    </div>
+    {% endif %}   
+{% endif %}
+<!--item details-->
+<div class="row-fluid" style="overflow:hidden">
+    <div class="span10">
+        <div class="h1 pull-left inline">
+            <h1>{{selectedItem.name}}</h1>
+            <h3>{{selectedItem.description}}</h3>
+        </div>
+        <div class="h1 pull-right inline">
+            {% if itemimage is not none %}
+                <img height="300" width="300" src="data:;base64,{{ itemimage }}"/>
+            {% endif %} 
+        </div>
+    </div>
+</div>
+
+{% endblock %}

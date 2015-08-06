@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	 <link href="{{ url_for('static', filename='styles/bootstrap.css') }}" rel="stylesheet" />	
+	 <script src="{{ url_for('static', filename='js/jquery.min.js') }}"></script>
+	 <script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
+	 <script src="http://apis.google.com/js/platform.js?onload=start"> </script>
+</head>
+<body>
+<script type="text/javascript">  
+    function signInCallback(authRes) {
+      if(authRes['code']){
+        $('#signInButton').attr('style','display:none');
+        $("#fblogindiv").attr('style','display:none');
+        $("#result").attr('style','display:inline-block');
+        //Send one time use code to server
+        $.ajax({
+          type: 'POST',
+          url: 'googlepluslogin?state={{STATE}}',
+          processData: 'false',
+          contentType: 'application/octet-stream; charset=utf-8',
+          data: authRes['code'],
+          success: function(result){
+            if(result){
+              $("#result").html('Login Successful </br>' + result + '</br>Redirecting')
+              setTimeout(function(){                
+                window.location.href = '/itemcatalog';
+              }, 4000);
+            } else if(authRes['error']){
+              console.log("Error occured: " + authRes['error']);
+            } else {
+              $('#result').html("Server side call failed. Check configuration and console");
+            }
+          }
+        });
+      }
+    }
+  	//Fb Login script
+    window.fbAsyncInit = function() {
+    FB.init({
+      appId      : '379359055604513',
+      cookie     : true,  // enable cookies to allow the server to access 
+                          // the session
+      xfbml      : true,  // parse social plugins on this page
+      version    : 'v2.3' // use version 2.2
+    });
+    };
+    // Load the SDK asynchronously
+    (function(d, s, id) {
+      var js, fjs = d.getElementsByTagName(s)[0];
+      if (d.getElementById(id)) return;
+      js = d.createElement(s); js.id = id;
+      js.src = "//connect.facebook.net/en_US/sdk.js";
+      fjs.parentNode.insertBefore(js, fjs);
+    }(document, 'script', 'facebook-jssdk'));
+    // Here we run a very simple test of the Graph API after login is
+    // successful.  See statusChangeCallback() for when this call is made.
+    function sendTokenToServer() {
+      var access_token = FB.getAuthResponse()['accessToken'];
+      console.log(access_token)
+      console.log('Welcome!  Fetching your information.... ');
+      FB.api('/me', function(response) {
+        console.log('Successful login for: ' + response.name);
+       $.ajax({
+        type: 'POST',
+        url: '/fbconnect?state={{STATE}}',
+        processData: false,
+        data: access_token,
+        contentType: 'application/octet-stream; charset=utf-8',
+        success: function(result) {
+          // Handle or verify the server response if necessary.
+          if (result) {
+            $('#result').html('Login Successful!</br>'+ result + '</br>Redirecting...')
+           setTimeout(function() {
+            window.location.href = "/restaurant";
+           }, 4000);
+            
+        } else {
+          $('#result').html('Failed to make a server-side call. Check your configuration and console.');
+           }
+        }
+        
+    });
+      });
+    }
+</script>
+<div class="banner menu" style="overflow:hidden">
+
+	<div class="col-md-10 col-md-offset-1">
+		{% if loggeduser is not none %}	
+			<div class="h1 pull-left inline">
+				<a href='{{url_for('home')}}'><span class="inline h2">Item Cataloging Application</span></a>
+			</div>
+			<div style="margin-top:10px;">
+				<div class="pull-right inline">
+					<a href="{{url_for('gpluslogout')}}">
+						<button class="btn btn-info" value="edit">
+							<span class="glyphicon glyphicon-log-out"></span>
+							Logout
+						</button>
+					</a>
+				</div>
+				<div class="pull-right inline">
+					<figure class="creator">
+						<img width="50" height="50" src="{{loggeduser.picture}}">
+						<figcaption>{{ loggeduser.name }}</figcaption>
+					</figure>			
+				</div>			
+			</div>
+		{% else %}
+		<div class="row-fluid" style="overflow:hidden">
+			<div class="span10">
+				<div class="h1 pull-left inline">
+					<a href='{{url_for('home')}}'><span class="inline h2">Item Cataloging Application</span></a>
+				</div>
+				<div class="h1 pull-right inline">					
+					<button type="button" class="btn btn-info" data-toggle="modal" data-target="#loginModal">
+						<span class="glyphicon glyphicon-log-in"></span>
+						Login
+					</button>
+					<!-- Modal -->
+					<div id="loginModal" class="modal fade" role="dialog">
+					  <div class="modal-dialog">
+					    <!-- Modal content-->
+					    <div class="modal-content">
+					      <div class="modal-header">
+					        <button type="button" class="close" data-dismiss="modal">&times;</button>
+					        <h3 class="modal-title">Login Options</h3>
+					      </div>
+					      <div class="modal-body">
+					        <!-- GOOGLE PLUS SIGN IN BUTTON-->
+						    <div id="signInButton">
+						      <span class="g-signin" data-scope="openid email" 
+						        data-clientid="954783472776-p1ib6l3c9feb0vq3f03n8q3d7cjv3rg6.apps.googleusercontent.com"
+						        data-redirecturi="postmessage"
+						        data-accesstype="offline"
+						        data-cookiepolicy="single_host_origin"
+						        data-callback="signInCallback"
+						        data-approvalprompt="force">
+						      </span>
+						    </div>
+						  <!--END GOOGLE PLUS SIGN IN BUTTON -->
+						  <!--FACEBOOK SIGN IN -->
+						   <div id='result' style="display:none;">Please wait!</div>
+						   <div id='fblogindiv'> 
+								<fb:login-button scope="public_profile,email" onlogin="sendTokenToServer();">	<a href='javascript:sendTokenToServer()'>Facebook Login</a>
+								</fb:login-button>
+							</div>
+							<!--END FACEBOOK SIGN IN -->
+					      </div>					      
+					    </div>
+					  </div>
+					</div>
+					<!--End of modal -->
+				</div>				
+			</div>			
+		</div>
+		{% endif %}		
+	</div>
+</div>
+<div class="container">
+	<div style="text-align:center;">
+      	{% with messages = get_flashed_messages() %}
+			{% if messages %}          	        
+		        {% for message in messages %}
+		            <p> <strong> {{ message }} </strong> </p>
+		        {% endfor %}	        
+	        {% endif %}
+	    {% endwith %}
+	</div>
+	{% block content %}
+	{% endblock %}
+</div>
+</body>
+</html>

@@ -1,0 +1,29 @@
+{% extends "sitemaster.html" %}
+{% block content %}
+
+<br/>
+<br/>
+
+<form action="#" method="post">
+  <div class="form-group">
+  	<input name='csrftoken' type=hidden value="{{ token }}">
+	<label for="name">Name:</label>
+	<input type ="text" maxlength="100" class="form-control" name="name" value="{{category.name}}" required>
+ 	<label for="description">Description:</label>
+	<textarea class="form-control" maxlength="250" rows="3" name="description" required>{{category.description}}</textarea>
+	</br>
+	<button type="submit" class="btn btn-default" name="btn" value="save" type="submit">
+		<span class="glyphicon glyphicon-ok" aria-hidden="true"></span>
+		Save
+	</button>
+	<a href = '{{url_for('viewCategory')}}'>
+		<button class="btn btn-default delete" formnovalidate name="btn" value="cancel">
+			<span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
+			Cancel
+		</button>
+	</a>
+	<input type="reset" class="btn btn-default">
+  </div>
+</form>
+
+{% endblock %}

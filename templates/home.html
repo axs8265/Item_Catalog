@@ -1,0 +1,90 @@
+{% extends "sitemaster.html" %}
+{% block content %}
+
+{% if categories != {} %}
+  <div class="inline">
+    <label><h3 class="text-muted">All Categories</h3></label>  
+    <a href="{{ url_for('allcategoriesAtom') }}" target="_blank" title="Atom Enabled" style="padding-left:10px;">
+      <button class="btn btn-default"><span class="glyphicon glyphicon-bullhorn"></span></button>
+    </a>
+  </div>
+  <div class="table-responsive inline" style="max-height:400px;overflow:auto">
+    <table class="table">        
+      {% for  key, value in categories.items() %}      
+        <tr>
+    		  <td><a href='{{url_for('viewCategory', category_id = key.id)}}'>{{key.name}} <span class="badge">{{value}}</span></a></td>        
+        </tr>
+      {% endfor %}  
+    </table> 
+  </div>
+{% else %}
+  <caption><h3>No Categories Found</h3></caption>
+{% endif %}
+</br>
+{% if loggeduser is not none %}
+<div>
+  <a href="{{url_for('addCategory')}}">
+  <button class="btn btn-default" value="edit">
+      <span class="glyphicon glyphicon-edit" aria-hidden="true"></span>
+      Add Catagory
+  </button>
+  </a>
+</div>
+{% endif %}
+</br>
+
+{% if recentItems != [] %}
+<!-- Carousel ================================================== --> 
+    <div class="block">
+      <label for="myCarousel">Recently Modified Items</label>
+      <a href="{{ url_for('recentitemsAtom') }}" target="_blank" title="Atom Enabled" style="padding-left:10px;">
+        <button class="btn btn-default"><span class="glyphicon glyphicon-bullhorn"></span></button>
+      </a>
+    </div>
+    </br>
+    <div>          
+      <div id="myCarousel" class="carousel slide" data-ride="carousel" style="background-color:grey;overflow:hidden;" data-interval="3000">
+        <!-- Indicators -->           
+          <ol class="carousel-indicators">
+          {% for item in recentItems %}
+            {% if loop.index -1 == 0 %}
+              <li data-target="#myCarousel" data-slide-to="{{ loop.index - 1 }}" class="active"></li>          
+            {% else %}
+              <li data-target="#myCarousel" data-slide-to="{{ loop.index - 1 }}"></li>            
+            {% endif %}
+          {% endfor %}  
+          </ol>      
+        <div class="carousel-inner" role="listbox">
+          {% for item in recentItems %}
+            {% if loop.index - 1 == 0 %}
+            <div class="item active">
+            {% else %}
+            <div class="item">
+            {% endif %}
+              <div style="display:inline-block;"> 
+                {% if item.itemImage is not none %}
+                  <img height="150" width="150" src="data:;base64,{{ item.itemImage }}">
+                {% endif %}
+              </div>
+              <div style="display:inline;">
+                <div class="pull-right" style="display:inline-block;align-text: center;width: 75%">
+                  <h3>{{item.title}}</h3>
+                  <p>{{item.desc}}</p>
+                  <p><a class="btn btn-lg btn-primary" href="{{url_for('viewItem', category_id = item.categoryId, item_id = item.id)}}" role="button">View Item</a></p>
+                </div>
+              </div>
+            </div>
+          {% endfor %}        
+        </div>
+        <a class="left carousel-control" href="#myCarousel" role="button" data-slide="prev">
+          <span class="glyphicon glyphicon-chevron-left" aria-hidden="true"></span>
+          <span class="sr-only">Previous</span>
+        </a>
+        <a class="right carousel-control" href="#myCarousel" role="button" data-slide="next">
+          <span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span>
+          <span class="sr-only">Next</span>
+        </a>
+      </div><!-- /.carousel -->
+    </div>
+  {% endif %}
+{% endblock %}
