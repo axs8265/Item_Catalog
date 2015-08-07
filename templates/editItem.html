@@ -15,7 +15,7 @@
 </div>
 <form action="#" method="post" enctype="multipart/form-data">	
   <div class="form-group">
-  	<input name='csrftoken' type=hidden value="{{ token }}">
+  	<input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
 	<input name='categoryId' type=hidden value="{{category.id}}">
 	<div style="display: inline-block">
   		<label for="category">Category:</label>

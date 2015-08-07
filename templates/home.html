@@ -1,7 +1,6 @@
 {% extends "sitemaster.html" %}
 {% block content %}
-
-{% if categories != {} %}
+{% if categories != [] %}
   <div class="inline">
     <label><h3 class="text-muted">All Categories</h3></label>  
     <a href="{{ url_for('allcategoriesAtom') }}" target="_blank" title="Atom Enabled" style="padding-left:10px;">
@@ -10,9 +9,9 @@
   </div>
   <div class="table-responsive inline" style="max-height:400px;overflow:auto">
     <table class="table">        
-      {% for  key, value in categories.items() %}      
+      {% for  eachCategory in categories %}      
         <tr>
-    		  <td><a href='{{url_for('viewCategory', category_id = key.id)}}'>{{key.name}} <span class="badge">{{value}}</span></a></td>        
+    		  <td><a href='{{url_for('viewCategory', category_id = eachCategory.id)}}'>{{eachCategory.name}} <span class="badge">{{eachCategory.items|count}}</span></a></td>       
         </tr>
       {% endfor %}  
     </table> 

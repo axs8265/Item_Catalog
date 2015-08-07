@@ -40,7 +40,7 @@
         //Send one time use code to server
         $.ajax({
           type: 'POST',
-          url: 'gconnect?state={{STATE}}',
+          url: 'gconnect?state={{csrf_token()}}',
           processData: 'false',
           contentType: 'application/octet-stream; charset=utf-8',
           data: authRes['code'],

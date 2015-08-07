@@ -21,6 +21,8 @@ class Category(Base):
     description = Column(String(250))
     last_updated = Column(DATETIME())
 
+    items = relationship('CategoryItem', cascade="all, delete-orphan")
+
     user_id = Column(Integer,ForeignKey('user.id'))
     user = relationship(User)
 
@@ -46,7 +48,7 @@ class CategoryItem(Base):
     image = Column(BLOB())
     last_updated = Column(DATETIME())
     category_id = Column(Integer,ForeignKey('category.id'))
-    category = relationship(Category)
+    category = relationship("Category", backref="category")
 
     user_id = Column(Integer,ForeignKey('user.id'))
     user = relationship(User)
