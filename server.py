@@ -171,7 +171,7 @@ def fblogin():
 	login_session['provider'] = 'facebook'
 	login_session['username'] = data["name"]
 	#user may not have a valid email id with facebook
-	login_session['email'] = data["email"] if data["email"] is not None else ''
+	login_session['email'] = data["email"]
 	login_session['facebook_id'] = data["id"]
 	# The token must be stored in the login_session in order to properly logout, let's strip out the information before the equals sign in our token
 	stored_token = token.split("=")[1]
@@ -227,100 +227,127 @@ def addCategory():
 	'''This function is to add new category to DB created by user'''
 	#get current logged user
 	loggeduser = getLoggedInUser()
-	#get user id. this should never be none since the UI won't allow adding new category if the user has not signed in
-	userId = loggeduser.id if loggeduser is not None else -1	
-	if request.method == 'GET':		
-		#since it's HTTP GET then simply render the edit page w/o any category
-		return render_template('editcategory.html', category = None, loggeduser = loggeduser)
-	elif request.method == 'POST':		
-		#verify values and add new cagetory
-		if (request.form['name'] != None and request.form['name'] != '') and \
-		 (request.form['description'] != None and request.form['description'] != ''):					
-			newcategory = Category(name = request.form['name'], description = request.form['description'], \
-				last_updated=datetime.datetime.now(), user_id = userId, user = loggeduser)
-			session.add(newcategory)
-			session.commit()
-			flash('New category %s Successfully Created' % (newcategory.name))			
-		return redirect(url_for('home'))
+	# A user needs to be logged in before s/he can add a new category
+	if loggeduser is not None:		
+		#get user id. this should never be none since the UI won't allow adding new category if the user has not signed in
+		userId = loggeduser.id if loggeduser is not None else -1	
+		if request.method == 'GET':		
+			#since it's HTTP GET then simply render the edit page w/o any category
+			return render_template('editcategory.html', category = None, loggeduser = loggeduser)
+		elif request.method == 'POST':		
+			#verify values and add new cagetory
+			if (request.form['name'] != None and request.form['name'] != '') and \
+			 (request.form['description'] != None and request.form['description'] != ''):					
+				newcategory = Category(name = request.form['name'], description = request.form['description'], \
+					last_updated=datetime.datetime.now(), user_id = userId, user = loggeduser)
+				session.add(newcategory)
+				session.commit()
+				flash('New category %s Successfully Created' % (newcategory.name))			
+	else:
+		flash('Please login to create new category')
+
+	return redirect(url_for('home'))
 
 
 @app.route('/category/<int:category_id>/edit', methods=['GET','POST'])
 def editCategory(category_id):
 	'''This function is to edit an existing category'''
 	category= session.query(Category).filter_by(id = category_id).one()
-	if request.method == 'GET':		
-		loggeduser = getLoggedInUser()
-		#since it's HTTP GET then simply render the edit page with selected category
-		return render_template('editcategory.html', category = category, loggeduser = loggeduser)
-	elif request.method == 'POST':		
-		#verify values and add save user edits
-		if request.form['btn']=='save' and request.form['name'] != None and request.form['description'] != None:
-			category.name = request.form['name']
-			category.description = request.form['description']
-			category.last_updated = datetime.datetime.now()
-			session.add(category)
-			session.commit()
-			flash('Edited category %s Successfully' % (category.name))
+	loggeduser = getLoggedInUser()
+	# A user needs to be logged in before s/he can edit a category
+	if loggeduser is not None:
+		#Verify if this user can make edit for this category
+		if loggeduser.id == category.user.id:
+			if request.method == 'GET':
+				#since it's HTTP GET then simply render the edit page with selected category
+				return render_template('editcategory.html', category = category, loggeduser = loggeduser)
+			elif request.method == 'POST':		
+				#verify values and add save user edits
+				if request.form['btn']=='save' and request.form['name'] != None and request.form['description'] != None:
+					category.name = request.form['name']
+					category.description = request.form['description']
+					category.last_updated = datetime.datetime.now()
+					session.add(category)
+					session.commit()
+					flash('Edited category %s Successfully' % (category.name))
+				return redirect(url_for('viewCategory', category_id = category_id))
+		else:
+			flash('You cannot edit a category created by someone else')
+	else:
+		flash('Please login to make edits to category')
 
-		return redirect(url_for('viewCategory', category_id = category_id))
+	return redirect(url_for('home'))
 
 @app.route('/category/<int:category_id>/delete', methods = ['POST','GET'])
 def deleteCategory(category_id):
 	'''This function is to delete an existing category'''
-	categoryToDelete = session.query(Category).filter_by(id = category_id).one()	
-	if request.method == 'POST':		
-		#Has user clicked delete or cancel button
-		if request.form['btn']=='delete':			
-			items = getItemsBycategoryId(category_id)
-
-			# #Delete all items associated with this category
-			# for i in items:
-			# 	session.delete(i)
-			# 	session.commit()
-				
-			session.delete(categoryToDelete)
-			session.commit()
-			flash('%s Successfully Deleted' % categoryToDelete.name)
-			return redirect(url_for('home'))
+	categoryToDelete = session.query(Category).filter_by(id = category_id).one()
+	loggeduser = getLoggedInUser()
+	# A user needs to be logged in before s/he can delete category
+	if loggeduser is not None:
+		#Verify if this user can make edit for this category
+		if loggeduser.id == categoryToDelete.user.id:
+			if request.method == 'POST':		
+				#Has user clicked delete or cancel button
+				if request.form['btn']=='delete':			
+					items = getItemsBycategoryId(category_id)
+					session.delete(categoryToDelete)
+					session.commit()
+					flash('%s Successfully Deleted' % categoryToDelete.name)
+					return redirect(url_for('home'))
+				else:
+					#User cancelled delete
+					return redirect(url_for('viewCategory', category_id = category_id))
+			else:		
+				return render_template('deleteCategory.html',category = categoryToDelete, loggeduser = loggeduser)
 		else:
-			#User cancelled delete
-			return redirect(url_for('viewCategory', category_id = category_id))
-	else:		
-		return render_template('deleteCategory.html',category = categoryToDelete, loggeduser = getLoggedInUser())
+			flash('You cannot delete a category created by someone else')
+	else:
+		flash('Please login to delete category')
+
+	return redirect(url_for('home'))
 
 @app.route('/category/<int:category_id>/item/new/', methods=['GET','POST'])
 def addItem(category_id):
 	'''This function is to add an item for a category'''
 	loggeduser = getLoggedInUser()
-	userId = loggeduser.id if loggeduser is not None else -1
-	if request.method == 'GET':		
-		category= session.query(Category).filter_by(id = category_id).one()
-		#since it's HTTP GET then simply render the edit page w/o any item
-		return render_template('editItem.html', itemimage = None, item = None, category = category, loggeduser = loggeduser)
-	if request.method == 'POST':
-		if request.form['btn']=='cancel':
-			#user clicked cancel button instead of save. go back to category page
-			return redirect(url_for('viewCategory', category_id = category_id))
-		#verify and add new item
-		if request.form['btn']=='save' and request.form['name'] != None and request.form['description'] != None:			
-			#verify image file is not none
-			if request.files['img_upload'] is not None:
-				imgFile = request.files['img_upload']
-				#read the image file object
-				itemImg = imgFile.read()
-				if len(itemImg) == 0:
-					#if the image length is 0, then user has not uploaded any image
-					itemImg = None
-			else:
-				itemImg = None			
-			newItem = CategoryItem(name = request.form['name'], description = request.form['description'],\
-				category_id = category_id, last_updated = datetime.datetime.now(), image = itemImg, user = loggeduser,\
-				user_id = userId)			
-			session.add(newItem)
-			session.commit()
-			
-			flash('New Item ''%s'' Successfully Created' % (newItem.name))
-			return redirect(url_for('viewCategory', category_id = category_id, itemimage = None))
+	category= session.query(Category).filter_by(id = category_id).one()
+	# A user needs to be logged in before s/he can delete category
+	if loggeduser is not None:
+		#Verify if this user can add items for this category
+		if loggeduser.id == category.user.id:
+			if request.method == 'GET':
+				#since it's HTTP GET then simply render the edit page w/o any item
+				return render_template('editItem.html', itemimage = None, item = None, category = category, loggeduser = loggeduser)
+			if request.method == 'POST':
+				if request.form['btn']=='cancel':
+					#user clicked cancel button instead of save. go back to category page
+					return redirect(url_for('viewCategory', category_id = category_id))
+				#verify and add new item
+				if request.form['btn']=='save' and request.form['name'] != None and request.form['description'] != None:			
+					#verify image file is not none
+					if request.files['img_upload'] is not None:
+						imgFile = request.files['img_upload']
+						#read the image file object
+						itemImg = imgFile.read()
+						if len(itemImg) == 0:
+							#if the image length is 0, then user has not uploaded any image
+							itemImg = None
+					else:
+						itemImg = None			
+					newItem = CategoryItem(name = request.form['name'], description = request.form['description'],\
+						category_id = category_id, last_updated = datetime.datetime.now(), image = itemImg, user = loggeduser,\
+						user_id = loggeduser.id)			
+					session.add(newItem)
+					session.commit()
+					
+					flash('New Item ''%s'' Successfully Created' % (newItem.name))
+					return redirect(url_for('viewCategory', category_id = category_id, itemimage = None))
+		else:
+			flash('You cannot add items to a category created by someone else')
+	else:
+		flash('Please login to add a new item')
+	return redirect(url_for('home'))
 
 @app.route('/category/<int:category_id>/item/<int:item_id>/edit', methods=['GET','POST'])
 def editItem(category_id, item_id):
@@ -330,39 +357,46 @@ def editItem(category_id, item_id):
 	selectedItem = session.query(CategoryItem).filter_by(id = item_id).one()
 	itemImage = b64encode(selectedItem.image) if (selectedItem is not None and selectedItem.image is not None) else None
 
-	loggeduser = getLoggedInUser()
-	userId = loggeduser.id if loggeduser is not None else -1
+	loggeduser = getLoggedInUser()	
+	# A user needs to be logged in before s/he can edit an item
+	if loggeduser is not None:
+		#Verify if this user can make edit for this item
+		if loggeduser.id == selectedItem.user.id:
+			if request.method == 'GET':		
+				#render edit template with selected category and item
+				return render_template('editItem.html', loggeduser = loggeduser, item = selectedItem, \
+					category = category, itemimage = itemImage)
 
-	if request.method == 'GET':		
-		#render edit template with selected category and item
-		return render_template('editItem.html', loggeduser = loggeduser, item = selectedItem, \
-			category = category, itemimage = itemImage)
+			if request.method == 'POST':
+				if request.form['btn']=='cancel':
+					#user clicked cancel button. go back to view category
+					return redirect(url_for('viewCategory', category_id = category_id))
+				#verify and save user edits
+				if request.form['btn']=='save' and request.form['name'] != None and request.form['description'] != None:
 
-	if request.method == 'POST':		
-		if request.form['btn']=='cancel':
-			#user clicked cancel button. go back to view category
-			return redirect(url_for('viewCategory', category_id = category_id))
-		#verify and save user edits
-		if request.form['btn']=='save' and request.form['name'] != None and request.form['description'] != None:
+					if request.files['img_upload'] != None:
+						imgFile = request.files['img_upload']
+						itemImg = imgFile.read()
+						#make sure user did upload some data
+						if len(itemImg) == 0:
+							itemImg = None
+					else:
+						itemImg = None
 
-			if request.files['img_upload'] != None:
-				imgFile = request.files['img_upload']
-				itemImg = imgFile.read()
-				#make sure user did upload some data
-				if len(itemImg) == 0:
-					itemImg = None
-			else:
-				itemImg = None
+					selectedItem.name = request.form['name']
+					selectedItem.description = request.form['description']
+					selectedItem.last_updated = datetime.datetime.now()			
+					selectedItem.image = itemImg
+					session.add(selectedItem)
+					session.commit()
+					flash('Item %s Successfully Edited' % (selectedItem.name))
+					return redirect(url_for('viewCategory', category_id = category_id))
+		else:
+			flash('You cannot edit an item created by someone else')
+	else:
+		flash('Please login to edit an item')
 
-			selectedItem.name = request.form['name']
-			selectedItem.description = request.form['description']
-			selectedItem.last_updated = datetime.datetime.now()			
-			selectedItem.image = itemImg
-			session.add(selectedItem)
-			session.commit()
-			flash('Item %s Successfully Edited' % (selectedItem.name))
-			return redirect(url_for('viewCategory', category_id = category_id))
-
+	return redirect(url_for('home'))
 
 @app.route('/category/<int:category_id>/item/<string:item_id>/')
 def viewItem(category_id, item_id):
@@ -403,16 +437,28 @@ def viewItem(category_id, item_id):
 def deleteCategoryItem(category_id,item_id):
 	'''This function is to delete an existing item.'''
 	itemToDelete = session.query(CategoryItem).filter_by(id = item_id).one()
-	if request.method == 'POST':
-		if request.form['btn'] == 'delete':
-			#user has confimed the delete of the item
-			session.delete(itemToDelete)
-			session.commit()
-			flash('Item %s Successfully Deleted' %itemToDelete.name)
+	loggeduser = getLoggedInUser()	
+	# A user needs to be logged in before s/he can edit an item
+	if loggeduser is not None:
+		#Verify if this user can make edit for this category
+		if loggeduser.id == itemToDelete.user.id:
+			if request.method == 'POST':
+				if request.form['btn'] == 'delete':
+					#user has confimed the delete of the item
+					session.delete(itemToDelete)
+					session.commit()
+					flash('Item %s Successfully Deleted' %itemToDelete.name)
 
-		return redirect(url_for('viewCategory', category_id = category_id))
-	else:		
-		return render_template('deleteItem.html', loggeduser = getLoggedInUser(), token = login_session['csfrtoken'], item = itemToDelete, category_id = category_id)
+				return redirect(url_for('viewCategory', category_id = category_id))
+			else:		
+				return render_template('deleteItem.html', loggeduser = getLoggedInUser(), \
+					token = login_session['csfrtoken'], item = itemToDelete, category_id = category_id)
+		else:
+			flash('You cannot delete an item created by someone else')
+	else:
+		flash('Please login to delete an item')
+
+	return redirect(url_for('home'))
 
 
 #Helper Functions
