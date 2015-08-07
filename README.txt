@@ -29,5 +29,6 @@ Change Log:
 3) Using backref and cascading delete in database set-up
 4) Users can now login using Facebook credentials
 5) Readme file updated for 'How to run' steps
+6) Prevent cross user edits and deletes
 
 	 
